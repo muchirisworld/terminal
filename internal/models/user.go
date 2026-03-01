@@ -1,7 +1,8 @@
-package domain
+package models
 
 import "time"
 
+// User represents a user in the database.
 type User struct {
 	ID            string    `db:"id" json:"id"`
 	Name          string    `db:"name" json:"name"`

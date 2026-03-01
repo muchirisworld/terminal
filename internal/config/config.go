@@ -1,25 +1,66 @@
 package config
 
-import "os"
+import (
+	"log"
+	"os"
+	"strconv"
+	"time"
 
+	"github.com/joho/godotenv"
+)
+
+// Config holds the application configuration.
 type Config struct {
-	Addr       string
-	AuthConfig *AuthConfig
+	AppEnv           string
+	HTTPPort         int
+	DatabaseURL      string
+	LogLevel         string
+	ShutdownTimeout  time.Duration
 }
 
-type AuthConfig struct {
-	SecretKey string
-	PublicKey string
-	IssuerUrl string
-}
-
-func LoadConfig(authConfig *AuthConfig) *Config {
-	port := os.Getenv("PORT")
-
-	cfg := &Config{
-		Addr:       port,
-		AuthConfig: authConfig,
+// New creates a new Config struct.
+func New() *Config {
+	if os.Getenv("APP_ENV") != "production" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("Warning: .env file not found")
+		}
 	}
 
-	return cfg
+	return &Config{
+		AppEnv:           getEnv("APP_ENV", "development"),
+		HTTPPort:         getEnvAsInt("HTTP_PORT", 8080),
+		DatabaseURL:      getEnv("DATABASE_URL", ""),
+		LogLevel:         getEnv("LOG_LEVEL", "debug"),
+		ShutdownTimeout:  getEnvAsDuration("SHUTDOWN_TIMEOUT", 5*time.Second),
+	}
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+func getEnvAsInt(key string, fallback int) int {
+	if value, ok := os.LookupEnv(key); ok {
+		i, err := strconv.Atoi(value)
+		if err != nil {
+			return fallback
+		}
+		return i
+	}
+	return fallback
+}
+
+func getEnvAsDuration(key string, fallback time.Duration) time.Duration {
+	if value, ok := os.LookupEnv(key); ok {
+		d, err := time.ParseDuration(value)
+		if err != nil {
+			return fallback
+		}
+		return d
+	}
+	return fallback
 }
