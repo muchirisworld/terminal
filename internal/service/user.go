@@ -9,7 +9,7 @@ import (
 
 // UserStore is the interface for the user store.
 type UserStore interface {
-	Create(ctx context.Context, user *models.UserRequest) (*models.User, error)
+	CreateUser(ctx context.Context, user *models.UserRequest) (*models.User, error)
 }
 
 // UserService is the service for the user model.
@@ -32,7 +32,7 @@ func (s *UserService) Create(ctx context.Context, req *models.UserRequest) (*mod
 		return nil, &ierrors.ValidationError{Message: "email cannot be empty"}
 	}
 
-	user, err := s.store.Create(ctx, req)
+	user, err := s.store.CreateUser(ctx, req)
 	if err != nil {
 		return nil, err
 	}
