@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func RegisterRoutes(logger *slog.Logger, healthRouter, userRouter http.Handler) http.Handler {
+func RegisterRoutes(logger *slog.Logger, healthRouter, userRouter, webhookRouter http.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -23,7 +23,14 @@ func RegisterRoutes(logger *slog.Logger, healthRouter, userRouter http.Handler) 
 
 	r.Mount("/health", healthRouter)
 	r.Mount("/users", userRouter)
+	r.Mount("/webhooks", webhookRouter)
 
+	return r
+}
+
+func RegisterWebhookRoutes(h *handlers.WebhookHandler) http.Handler {
+	r := chi.NewRouter()
+	r.Post("/clerk", h.HandleClerk)
 	return r
 }
 

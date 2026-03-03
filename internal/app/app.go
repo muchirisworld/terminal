@@ -40,16 +40,21 @@ func New(ctx context.Context) (*App, error) {
 	healthHandler := handlers.NewHealthHandler(database, log)
 	healthRouter := router.RegisterHealthRoutes(healthHandler)
 
-	userStore := store.NewUserStore(database)
-	userService := service.NewUserService(userStore)
+	mainStore := store.New(database)
+
+	userService := service.NewUserService(mainStore)
 	userHandler := handlers.NewUserHandler(userService, log)
 	userRouter := router.RegisterUserRoutes(userHandler)
+
+	webhookService := service.NewWebhookService(mainStore, log)
+	webhookHandler := handlers.NewWebhookHandler(webhookService, cfg, log)
+	webhookRouter := router.RegisterWebhookRoutes(webhookHandler)
 
 	return &App{
 		Config: cfg,
 		Logger: log,
 		DB:     database,
-		Server: server.New(cfg, log, healthRouter, userRouter),
+		Server: server.New(cfg, log, healthRouter, userRouter, webhookRouter),
 	}, nil
 }
 

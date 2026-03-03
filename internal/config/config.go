@@ -11,11 +11,13 @@ import (
 
 // Config holds the application configuration.
 type Config struct {
-	AppEnv           string
-	HTTPPort         int
-	DatabaseURL      string
-	LogLevel         string
-	ShutdownTimeout  time.Duration
+	AppEnv             string
+	HTTPPort           int
+	DatabaseURL        string
+	LogLevel           string
+	ShutdownTimeout    time.Duration
+	ClerkWebhookSecret string
+	ClerkSecretKey     string
 }
 
 // New creates a new Config struct.
@@ -28,11 +30,13 @@ func New() *Config {
 	}
 
 	return &Config{
-		AppEnv:           getEnv("APP_ENV", "development"),
-		HTTPPort:         getEnvAsInt("HTTP_PORT", 8080),
-		DatabaseURL:      getEnv("DATABASE_URL", ""),
-		LogLevel:         getEnv("LOG_LEVEL", "debug"),
-		ShutdownTimeout:  getEnvAsDuration("SHUTDOWN_TIMEOUT", 5*time.Second),
+		AppEnv:             getEnv("APP_ENV", "development"),
+		HTTPPort:           getEnvAsInt("HTTP_PORT", 8080),
+		DatabaseURL:        getEnv("DATABASE_URL", ""),
+		LogLevel:           getEnv("LOG_LEVEL", "debug"),
+		ShutdownTimeout:    getEnvAsDuration("SHUTDOWN_TIMEOUT", 5*time.Second),
+		ClerkWebhookSecret: getEnv("CLERK_WEBHOOK_SECRET", ""),
+		ClerkSecretKey:     getEnv("CLERK_SECRET_KEY", ""),
 	}
 }
 

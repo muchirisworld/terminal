@@ -10,9 +10,9 @@ import (
 )
 
 // New creates a new HTTP server.
-func New(cfg *config.Config, logger *slog.Logger, healthHandler, userHandler http.Handler) *http.Server {
+func New(cfg *config.Config, logger *slog.Logger, healthHandler, userHandler, webhookHandler http.Handler) *http.Server {
 	return &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HTTPPort),
-		Handler: router.RegisterRoutes(logger, healthHandler, userHandler),
+		Handler: router.RegisterRoutes(logger, healthHandler, userHandler, webhookHandler),
 	}
 }
