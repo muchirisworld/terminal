@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
 	"log/slog"
 	"net/http"
@@ -51,7 +53,13 @@ func (h *WebhookHandler) HandleClerk(w http.ResponseWriter, r *http.Request) {
 		h.logger.Warn("webhook signature verification skipped because secret is not configured")
 	}
 
-	err = h.svc.Process(r.Context(), payload)
+	eventID := r.Header.Get("svix-id")
+	if eventID == "" {
+		hash := sha256.Sum256(payload)
+		eventID = hex.EncodeToString(hash[:])
+	}
+
+	err = h.svc.Process(r.Context(), eventID, payload)
 	if err != nil {
 		// The service already logged the error, so we just return 500
 		http.Error(w, "failed to process webhook", http.StatusInternalServerError)

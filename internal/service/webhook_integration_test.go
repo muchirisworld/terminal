@@ -69,13 +69,13 @@ func TestWebhookService_DuplicateEvent(t *testing.T) {
 	}`)
 
 	// Process first time
-	err := svc.Process(ctx, payload)
+	err := svc.Process(ctx, "evt_dup1", payload)
 	if err != nil {
 		t.Fatalf("expected no error on first process, got: %v", err)
 	}
 
 	// Process second time (Duplicate)
-	err = svc.Process(ctx, payload)
+	err = svc.Process(ctx, "evt_dup1", payload)
 	if err != nil {
 		t.Fatalf("expected no error on duplicate process, got: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestWebhookService_MembershipBeforeOrganization(t *testing.T) {
 			"image_url": ""
 		}
 	}`)
-	if err := svc.Process(ctx, userPayload); err != nil {
+	if err := svc.Process(ctx, "evt_user_1", userPayload); err != nil {
 		t.Fatalf("failed to create user: %v", err)
 	}
 
@@ -127,7 +127,7 @@ func TestWebhookService_MembershipBeforeOrganization(t *testing.T) {
 		}
 	}`)
 
-	err := svc.Process(ctx, membershipPayload)
+	err := svc.Process(ctx, "evt_mem_1", membershipPayload)
 	if err == nil {
 		t.Fatalf("expected error processing membership before organization, got nil")
 	}
@@ -158,12 +158,12 @@ func TestWebhookService_MembershipBeforeOrganization(t *testing.T) {
 			"created_by": "user_mem"
 		}
 	}`)
-	if err := svc.Process(ctx, orgPayload); err != nil {
+	if err := svc.Process(ctx, "evt_org_1", orgPayload); err != nil {
 		t.Fatalf("failed to create organization: %v", err)
 	}
 
 	// 4. Retry membership creation
-	err = svc.Process(ctx, membershipPayload)
+	err = svc.Process(ctx, "evt_mem_1", membershipPayload)
 	if err != nil {
 		t.Fatalf("expected no error on retry after org is created, got: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestWebhookService_SuccessfulProjectionUpdatesRows(t *testing.T) {
 			"image_url": ""
 		}
 	}`)
-	if err := svc.Process(ctx, userPayload); err != nil {
+	if err := svc.Process(ctx, "evt_proj_user", userPayload); err != nil {
 		t.Fatalf("failed to process user: %v", err)
 	}
 
@@ -234,7 +234,7 @@ func TestWebhookService_SuccessfulProjectionUpdatesRows(t *testing.T) {
 			"image_url": "http://image"
 		}
 	}`)
-	if err := svc.Process(ctx, userUpdatePayload); err != nil {
+	if err := svc.Process(ctx, "evt_proj_user_upd", userUpdatePayload); err != nil {
 		t.Fatalf("failed to process user update: %v", err)
 	}
 
@@ -255,7 +255,7 @@ func TestWebhookService_SuccessfulProjectionUpdatesRows(t *testing.T) {
 			"id": "user_proj"
 		}
 	}`)
-	if err := svc.Process(ctx, userDeletePayload); err != nil {
+	if err := svc.Process(ctx, "evt_proj_user_del", userDeletePayload); err != nil {
 		t.Fatalf("failed to process user delete: %v", err)
 	}
 

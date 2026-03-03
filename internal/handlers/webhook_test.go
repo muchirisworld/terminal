@@ -18,7 +18,7 @@ import (
 
 func TestWebhookHandler_SignatureFailure(t *testing.T) {
 	cfg := &config.Config{
-		ClerkWebhookSecret: "whsec_testsecret123",
+		ClerkWebhookSecret: "whsec_dGVzdHNlY3JldDEyMzQ=",
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	// Pass nil db for this test since we only test the signature which fails before DB is hit

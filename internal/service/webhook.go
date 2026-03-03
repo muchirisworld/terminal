@@ -11,9 +11,8 @@ import (
 
 // Event envelope parsing
 type Event struct {
-	InstanceID string          `json:"instance_id"`
-	Type       string          `json:"type"`
-	Data       json.RawMessage `json:"data"`
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
 }
 
 // WebhookService processes incoming webhooks
@@ -31,13 +30,11 @@ func NewWebhookService(s *store.Store, logger *slog.Logger) *WebhookService {
 }
 
 // Process handles a single webhook event
-func (s *WebhookService) Process(ctx context.Context, rawBody []byte) error {
+func (s *WebhookService) Process(ctx context.Context, eventID string, rawBody []byte) error {
 	var event Event
 	if err := json.Unmarshal(rawBody, &event); err != nil {
 		return fmt.Errorf("failed to parse event envelope: %w", err)
 	}
-
-	eventID := event.InstanceID
 
 	// Try to insert the event
 	isDuplicate, err := s.store.InsertWebhookEvent(ctx, eventID, "clerk", event.Type, rawBody)
@@ -45,7 +42,7 @@ func (s *WebhookService) Process(ctx context.Context, rawBody []byte) error {
 		return fmt.Errorf("failed to insert webhook event: %w", err)
 	}
 	if isDuplicate {
-		s.logger.Info("webhook event already exists", "instance_id", eventID)
+		s.logger.Info("webhook event already exists", "id", eventID)
 		return nil
 	}
 
@@ -66,11 +63,11 @@ func (s *WebhookService) Process(ctx context.Context, rawBody []byte) error {
 
 	if err != nil {
 		// Log the error and update the record's failure state
-		s.logger.Error("webhook handler failed", "instance_id", eventID, "type", event.Type, "error", err)
+		s.logger.Error("webhook handler failed", "id", eventID, "type", event.Type, "error", err)
 
 		// Create a separate connection/transaction to record the error
 		if updateErr := s.store.UpdateWebhookEventError(context.Background(), eventID, err.Error()); updateErr != nil {
-			s.logger.Error("failed to update webhook event error state", "instance_id", eventID, "err", updateErr)
+			s.logger.Error("failed to update webhook event error state", "id", eventID, "err", updateErr)
 		}
 
 		// Return the error so the caller can return a 500 status and trigger retry
@@ -82,6 +79,6 @@ func (s *WebhookService) Process(ctx context.Context, rawBody []byte) error {
 		return fmt.Errorf("failed to mark webhook event as processed: %w", err)
 	}
 
-	s.logger.Info("successfully processed webhook", "instance_id", eventID, "type", event.Type)
+	s.logger.Info("successfully processed webhook", "id", eventID, "type", event.Type)
 	return nil
 }
