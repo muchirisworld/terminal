@@ -135,7 +135,7 @@ func TestWebhookService_MembershipBeforeOrganization(t *testing.T) {
 	// Ensure webhook_events recorded the error
 	var attempts int
 	var lastError sql.NullString
-	err = db.QueryRow("SELECT attempts, last_error FROM webhook_events WHERE instance_id = 'evt_mem_1'").Scan(&attempts, &lastError)
+	err = db.QueryRow("SELECT attempts, last_error FROM webhook_events WHERE id = 'evt_mem_1'").Scan(&attempts, &lastError)
 	if err != nil {
 		t.Fatalf("failed to query webhook_events: %v", err)
 	}
