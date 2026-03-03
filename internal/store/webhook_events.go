@@ -9,6 +9,7 @@ import (
 // InsertWebhookEvent tries to insert a new webhook event.
 // Returns a boolean indicating if it was already processed (true) and should be skipped.
 func (s *Store) InsertWebhookEvent(ctx context.Context, id, provider, eventType string, payload []byte) (bool, error) {
+
 	_, err := s.dbtx.ExecContext(ctx, `
 		INSERT INTO webhook_events (id, provider, type, payload, attempts)
 		VALUES ($1, $2, $3, $4, 1)
@@ -16,11 +17,15 @@ func (s *Store) InsertWebhookEvent(ctx context.Context, id, provider, eventType 
 
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" { // unique_violation
-			// Check if it's already processed
+			// Try to acquire lock on the row for processing
 			var processed bool
-			errCheck := s.dbtx.QueryRowContext(ctx, "SELECT processed_at IS NOT NULL FROM webhook_events WHERE id = $1", id).Scan(&processed)
+			errCheck := s.dbtx.QueryRowContext(ctx, "SELECT processed_at IS NOT NULL FROM webhook_events WHERE id = $1 FOR UPDATE SKIP LOCKED", id).Scan(&processed)
+			if errCheck == sql.ErrNoRows {
+				// Another process has the lock, skip this
+				return true, nil
+			}
 			if errCheck != nil {
-				return false, errCheck // Return the new error
+				return false, errCheck
 			}
 			if processed {
 				return true, nil // Already processed, skip
@@ -32,6 +37,7 @@ func (s *Store) InsertWebhookEvent(ctx context.Context, id, provider, eventType 
 
 	return false, nil
 }
+
 
 // MarkWebhookEventProcessed marks an event as processed.
 func (s *Store) MarkWebhookEventProcessed(ctx context.Context, id string) error {
