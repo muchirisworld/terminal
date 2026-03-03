@@ -1,10 +1,13 @@
+
 package store
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/lib/pq"
 )
+
 
 // InsertWebhookEvent tries to insert a new webhook event.
 // Returns a boolean indicating if it was already processed (true) and should be skipped.
