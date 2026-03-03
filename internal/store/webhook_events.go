@@ -7,7 +7,7 @@ import (
 )
 
 // InsertWebhookEvent tries to insert a new webhook event.
-// Returns a boolean indicating if it was a duplicate (already exists).
+// Returns a boolean indicating if it was already processed (true) and should be skipped.
 func (s *Store) InsertWebhookEvent(ctx context.Context, id, provider, eventType string, payload []byte) (bool, error) {
 	_, err := s.dbtx.ExecContext(ctx, `
 		INSERT INTO webhook_events (id, provider, type, payload, attempts)
@@ -16,7 +16,16 @@ func (s *Store) InsertWebhookEvent(ctx context.Context, id, provider, eventType 
 
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" { // unique_violation
-			return true, nil
+			// Check if it's already processed
+			var processed bool
+			errCheck := s.dbtx.QueryRowContext(ctx, "SELECT processed_at IS NOT NULL FROM webhook_events WHERE id = $1", id).Scan(&processed)
+			if errCheck != nil {
+				return false, errCheck // Return the new error
+			}
+			if processed {
+				return true, nil // Already processed, skip
+			}
+			return false, nil // Not processed, allow retry
 		}
 		return false, err
 	}

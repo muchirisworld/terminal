@@ -37,12 +37,12 @@ func (s *WebhookService) Process(ctx context.Context, eventID string, rawBody []
 	}
 
 	// Try to insert the event
-	isDuplicate, err := s.store.InsertWebhookEvent(ctx, eventID, "clerk", event.Type, rawBody)
+	alreadyProcessed, err := s.store.InsertWebhookEvent(ctx, eventID, "clerk", event.Type, rawBody)
 	if err != nil {
 		return fmt.Errorf("failed to insert webhook event: %w", err)
 	}
-	if isDuplicate {
-		s.logger.Info("webhook event already exists", "id", eventID)
+	if alreadyProcessed {
+		s.logger.Info("webhook event already processed, skipping", "id", eventID)
 		return nil
 	}
 
