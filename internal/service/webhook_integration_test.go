@@ -180,7 +180,7 @@ func TestWebhookService_MembershipBeforeOrganization(t *testing.T) {
 
 	// Verify webhook event is now processed
 	var processedAt sql.NullTime
-	err = db.QueryRow("SELECT processed_at FROM webhook_events WHERE instance_id = 'evt_mem_1'").Scan(&processedAt)
+	err = db.QueryRow("SELECT processed_at FROM webhook_events WHERE id = 'evt_mem_1'").Scan(&processedAt)
 	if err != nil {
 		t.Fatal(err)
 	}
