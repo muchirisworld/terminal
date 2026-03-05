@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"github.com/muchirisworld/terminal/internal/auth"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -21,7 +22,12 @@ func NewInventoryHandler(service *service.InventoryService) *InventoryHandler {
 }
 
 func (h *InventoryHandler) UpsertConversion(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	productID, err := uuid.Parse(chi.URLParam(r, "productID"))
 	if err != nil {
 		http.Error(w, "invalid product id", http.StatusBadRequest)
@@ -45,7 +51,12 @@ func (h *InventoryHandler) UpsertConversion(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *InventoryHandler) ListConversionsByProduct(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	productID, err := uuid.Parse(chi.URLParam(r, "productID"))
 	if err != nil {
 		http.Error(w, "invalid product id", http.StatusBadRequest)
@@ -63,7 +74,12 @@ func (h *InventoryHandler) ListConversionsByProduct(w http.ResponseWriter, r *ht
 }
 
 func (h *InventoryHandler) CreateReceipt(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	variantID, err := uuid.Parse(chi.URLParam(r, "variantID"))
 	if err != nil {
 		http.Error(w, "invalid variant id", http.StatusBadRequest)
@@ -87,7 +103,12 @@ func (h *InventoryHandler) CreateReceipt(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *InventoryHandler) CreateAdjustment(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	variantID, err := uuid.Parse(chi.URLParam(r, "variantID"))
 	if err != nil {
 		http.Error(w, "invalid variant id", http.StatusBadRequest)
@@ -111,7 +132,12 @@ func (h *InventoryHandler) CreateAdjustment(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *InventoryHandler) ReserveInventory(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	variantID, err := uuid.Parse(chi.URLParam(r, "variantID"))
 	if err != nil {
 		http.Error(w, "invalid variant id", http.StatusBadRequest)
@@ -140,7 +166,12 @@ func (h *InventoryHandler) ReserveInventory(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *InventoryHandler) ReleaseReservation(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	reservationID, err := uuid.Parse(chi.URLParam(r, "reservationID"))
 	if err != nil {
 		http.Error(w, "invalid reservation id", http.StatusBadRequest)
@@ -157,7 +188,12 @@ func (h *InventoryHandler) ReleaseReservation(w http.ResponseWriter, r *http.Req
 }
 
 func (h *InventoryHandler) GetVariantStock(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	variantID, err := uuid.Parse(chi.URLParam(r, "variantID"))
 	if err != nil {
 		http.Error(w, "invalid variant id", http.StatusBadRequest)

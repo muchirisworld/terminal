@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/muchirisworld/terminal/internal/config"
 	"github.com/muchirisworld/terminal/internal/handlers"
 	imiddleware "github.com/muchirisworld/terminal/internal/middleware"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func RegisterRoutes(logger *slog.Logger, healthRouter, userRouter, webhookRouter, catalogRouter, inventoryRouter http.Handler) http.Handler {
+func RegisterRoutes(cfg *config.Config, logger *slog.Logger, healthRouter, userRouter, webhookRouter, catalogRouter, inventoryRouter http.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -24,8 +25,13 @@ func RegisterRoutes(logger *slog.Logger, healthRouter, userRouter, webhookRouter
 	r.Mount("/health", healthRouter)
 	r.Mount("/users", userRouter)
 	r.Mount("/webhooks", webhookRouter)
-	r.Mount("/catalog", catalogRouter)
-	r.Mount("/inventory", inventoryRouter)
+
+	// Protected routes
+	r.Group(func(r chi.Router) {
+		r.Use(imiddleware.AuthMiddleware(cfg, logger))
+		r.Mount("/catalog", catalogRouter)
+		r.Mount("/inventory", inventoryRouter)
+	})
 
 	return r
 }

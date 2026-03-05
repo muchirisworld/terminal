@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/muchirisworld/terminal/internal/auth"
 	"net/http"
 	"strconv"
 
@@ -19,16 +20,13 @@ func NewCatalogHandler(service *service.CatalogService) *CatalogHandler {
 	return &CatalogHandler{service: service}
 }
 
-func getOrgID(r *http.Request) string {
-	return r.Header.Get("X-Organization-ID")
-}
-
 func (h *CatalogHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
-	if orgID == "" {
-		http.Error(w, "missing organization id", http.StatusBadRequest)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
+	orgID := authCtx.OrgID
 
 	var req models.CreateProductRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -47,7 +45,12 @@ func (h *CatalogHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CatalogHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	id, err := uuid.Parse(chi.URLParam(r, "productID"))
 	if err != nil {
 		http.Error(w, "invalid product id", http.StatusBadRequest)
@@ -71,7 +74,12 @@ func (h *CatalogHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CatalogHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	id, err := uuid.Parse(chi.URLParam(r, "productID"))
 	if err != nil {
 		http.Error(w, "invalid product id", http.StatusBadRequest)
@@ -93,7 +101,12 @@ func (h *CatalogHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CatalogHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 
@@ -102,13 +115,18 @@ func (h *CatalogHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(products)
 }
 
 func (h *CatalogHandler) ArchiveProduct(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	id, err := uuid.Parse(chi.URLParam(r, "productID"))
 	if err != nil {
 		http.Error(w, "invalid product id", http.StatusBadRequest)
@@ -126,7 +144,12 @@ func (h *CatalogHandler) ArchiveProduct(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *CatalogHandler) CreateVariant(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	productID, err := uuid.Parse(chi.URLParam(r, "productID"))
 	if err != nil {
 		http.Error(w, "invalid product id", http.StatusBadRequest)
@@ -150,7 +173,12 @@ func (h *CatalogHandler) CreateVariant(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CatalogHandler) ListVariantsByProduct(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	productID, err := uuid.Parse(chi.URLParam(r, "productID"))
 	if err != nil {
 		http.Error(w, "invalid product id", http.StatusBadRequest)
@@ -168,7 +196,12 @@ func (h *CatalogHandler) ListVariantsByProduct(w http.ResponseWriter, r *http.Re
 }
 
 func (h *CatalogHandler) GetVariant(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	id, err := uuid.Parse(chi.URLParam(r, "variantID"))
 	if err != nil {
 		http.Error(w, "invalid variant id", http.StatusBadRequest)
@@ -190,7 +223,12 @@ func (h *CatalogHandler) GetVariant(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CatalogHandler) UpdateVariant(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgID(r)
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
 	id, err := uuid.Parse(chi.URLParam(r, "variantID"))
 	if err != nil {
 		http.Error(w, "invalid variant id", http.StatusBadRequest)
