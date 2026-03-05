@@ -48,13 +48,13 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-		var userReq models.UserRequest
-		if err := json.Unmarshal(body, &userReq); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
+	var userReq models.UserRequest
+	if err := json.Unmarshal(body, &userReq); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
 
-		user, err := h.service.Create(r.Context(), &userReq)
+	user, err := h.service.Create(r.Context(), &userReq)
 	if err != nil {
 		var validationErr *ierrors.ValidationError
 		if errors.As(err, &validationErr) {

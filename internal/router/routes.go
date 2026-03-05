@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/muchirisworld/terminal/internal/config"
 	"github.com/muchirisworld/terminal/internal/handlers"
 	imiddleware "github.com/muchirisworld/terminal/internal/middleware"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func RegisterRoutes(logger *slog.Logger, healthRouter, userRouter, webhookRouter http.Handler) http.Handler {
+func RegisterRoutes(cfg *config.Config, logger *slog.Logger, healthRouter, userRouter, webhookRouter, catalogRouter, inventoryRouter http.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -24,6 +25,44 @@ func RegisterRoutes(logger *slog.Logger, healthRouter, userRouter, webhookRouter
 	r.Mount("/health", healthRouter)
 	r.Mount("/users", userRouter)
 	r.Mount("/webhooks", webhookRouter)
+
+	// Protected routes
+	r.Group(func(r chi.Router) {
+		r.Use(imiddleware.AuthMiddleware(cfg, logger))
+		r.Mount("/catalog", catalogRouter)
+		r.Mount("/inventory", inventoryRouter)
+	})
+
+	return r
+}
+
+func RegisterCatalogRoutes(h *handlers.CatalogHandler) http.Handler {
+	r := chi.NewRouter()
+	r.Post("/products", h.CreateProduct)
+	r.Get("/products", h.ListProducts)
+	r.Get("/products/{productID}", h.GetProduct)
+	r.Patch("/products/{productID}", h.UpdateProduct)
+	r.Post("/products/{productID}/archive", h.ArchiveProduct)
+
+	r.Post("/products/{productID}/variants", h.CreateVariant)
+	r.Get("/products/{productID}/variants", h.ListVariantsByProduct)
+	r.Get("/variants/{variantID}", h.GetVariant)
+	r.Patch("/variants/{variantID}", h.UpdateVariant)
+
+	return r
+}
+
+func RegisterInventoryRoutes(h *handlers.InventoryHandler) http.Handler {
+	r := chi.NewRouter()
+	r.Post("/products/{productID}/conversions", h.UpsertConversion)
+	r.Get("/products/{productID}/conversions", h.ListConversionsByProduct)
+
+	r.Post("/variants/{variantID}/receipt", h.CreateReceipt)
+	r.Post("/variants/{variantID}/adjustment", h.CreateAdjustment)
+	r.Post("/variants/{variantID}/reserve", h.ReserveInventory)
+	r.Get("/variants/{variantID}/stock", h.GetVariantStock)
+
+	r.Post("/reservations/{reservationID}/release", h.ReleaseReservation)
 
 	return r
 }

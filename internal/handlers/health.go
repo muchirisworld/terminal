@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"net/http"
 	"github.com/jmoiron/sqlx"
 	"log/slog"
+	"net/http"
 )
 
 // HealthHandler is the handler for the healthz endpoint.
@@ -11,7 +11,6 @@ type HealthHandler struct {
 	DB     *sqlx.DB
 	Logger *slog.Logger
 }
-
 
 // NewHealthHandler creates a new HealthHandler.
 func NewHealthHandler(db *sqlx.DB, logger *slog.Logger) *HealthHandler {
