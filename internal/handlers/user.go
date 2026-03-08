@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"log/slog"
 	"net/http"
 
 	ierrors "github.com/muchirisworld/terminal/internal/ierrors"
+	"github.com/muchirisworld/terminal/internal/logger"
 	"github.com/muchirisworld/terminal/internal/models"
 )
 
@@ -27,8 +27,8 @@ type UserHandler struct {
 }
 
 // NewUserHandler creates a new UserHandler.
-func NewUserHandler(service UserService, logger *slog.Logger) *UserHandler {
-	return &UserHandler{service: service, logger: logger}
+func NewUserHandler(service UserService, log *slog.Logger) *UserHandler {
+	return &UserHandler{service: service, logger: log}
 }
 
 // Create is the handler for creating a new user.
@@ -38,7 +38,8 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Failed to read body: %v", err)
+		logger.Add(r.Context(), "error", err.Error())
+		logger.Add(r.Context(), "action", "read_body")
 		var maxBytesErr *http.MaxBytesError
 		if errors.As(err, &maxBytesErr) {
 			http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
@@ -61,7 +62,8 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, validationErr.Message, http.StatusBadRequest)
 			return
 		}
-		h.logger.Error("failed to create user", "err", err)
+		logger.Add(r.Context(), "error", err.Error())
+		logger.Add(r.Context(), "action", "create_user")
 		http.Error(w, "failed to create user", http.StatusInternalServerError)
 		return
 	}
@@ -69,6 +71,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(user); err != nil {
-		h.logger.Error("failed to encode user", "err", err)
+		logger.Add(r.Context(), "error", err.Error())
+		logger.Add(r.Context(), "action", "encode_user")
 	}
 }

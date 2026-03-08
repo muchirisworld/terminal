@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/muchirisworld/terminal/internal/config"
+	"github.com/muchirisworld/terminal/internal/logger"
 	"github.com/muchirisworld/terminal/internal/service"
 	svix "github.com/svix/svix-webhooks/go"
 )
@@ -18,18 +19,19 @@ type WebhookHandler struct {
 	logger *slog.Logger
 }
 
-func NewWebhookHandler(svc *service.WebhookService, cfg *config.Config, logger *slog.Logger) *WebhookHandler {
+func NewWebhookHandler(svc *service.WebhookService, cfg *config.Config, log *slog.Logger) *WebhookHandler {
 	return &WebhookHandler{
 		svc:    svc,
 		secret: cfg.ClerkWebhookSecret,
-		logger: logger,
+		logger: log,
 	}
 }
 
 func (h *WebhookHandler) HandleClerk(w http.ResponseWriter, r *http.Request) {
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.logger.Error("failed to read webhook body", "error", err)
+		logger.Add(r.Context(), "error", err.Error())
+		logger.Add(r.Context(), "webhook_error", "failed to read webhook body")
 		http.Error(w, "failed to read body", http.StatusBadRequest)
 		return
 	}
@@ -38,19 +40,21 @@ func (h *WebhookHandler) HandleClerk(w http.ResponseWriter, r *http.Request) {
 	if h.secret != "" {
 		wh, err := svix.NewWebhook(h.secret)
 		if err != nil {
-			h.logger.Error("failed to create webhook verifier", "error", err)
+			logger.Add(r.Context(), "error", err.Error())
+			logger.Add(r.Context(), "webhook_error", "failed to create webhook verifier")
 			http.Error(w, "internal configuration error", http.StatusInternalServerError)
 			return
 		}
 
 		err = wh.Verify(payload, r.Header)
 		if err != nil {
-			h.logger.Warn("invalid webhook signature", "error", err)
+			logger.Add(r.Context(), "error", err.Error())
+			logger.Add(r.Context(), "webhook_error", "invalid webhook signature")
 			http.Error(w, "invalid signature", http.StatusUnauthorized)
 			return
 		}
 	} else {
-		h.logger.Warn("webhook signature verification skipped because secret is not configured")
+		logger.Add(r.Context(), "webhook_warning", "webhook signature verification skipped because secret is not configured")
 	}
 
 	eventID := r.Header.Get("svix-id")
@@ -58,10 +62,11 @@ func (h *WebhookHandler) HandleClerk(w http.ResponseWriter, r *http.Request) {
 		hash := sha256.Sum256(payload)
 		eventID = hex.EncodeToString(hash[:])
 	}
+	logger.Add(r.Context(), "webhook_id", eventID)
 
 	err = h.svc.Process(r.Context(), eventID, payload)
 	if err != nil {
-		// The service already logged the error, so we just return 500
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, "failed to process webhook", http.StatusInternalServerError)
 		return
 	}

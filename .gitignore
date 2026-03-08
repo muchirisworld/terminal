@@ -33,3 +33,9 @@ go.work.sum
 # Various OS-specific files
 .DS_Store
 Thumbs.db
+
+# AI skills
+.agent*
+.claude
+.windsurf
+skills*

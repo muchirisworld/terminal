@@ -3,6 +3,7 @@ package logger
 import (
 	"log/slog"
 	"os"
+
 	"github.com/muchirisworld/terminal/internal/config"
 )
 
@@ -12,7 +13,6 @@ func New(cfg *config.Config) *slog.Logger {
 	opts := &slog.HandlerOptions{
 		AddSource: true,
 	}
-
 
 	switch cfg.LogLevel {
 	case "debug":
@@ -34,5 +34,12 @@ func New(cfg *config.Config) *slog.Logger {
 		handler = slog.NewTextHandler(os.Stdout, opts)
 	}
 
-	return slog.New(handler)
+	// Environment characteristics
+	log := slog.New(handler).With(
+		"env", cfg.AppEnv,
+		"version", os.Getenv("APP_VERSION"),
+		"commit_hash", os.Getenv("COMMIT_HASH"),
+	)
+
+	return log
 }

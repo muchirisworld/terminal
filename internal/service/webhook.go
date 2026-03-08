@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/muchirisworld/terminal/internal/logger"
 	"github.com/muchirisworld/terminal/internal/store"
 )
 
@@ -22,10 +23,10 @@ type WebhookService struct {
 }
 
 // NewWebhookService creates a new WebhookService
-func NewWebhookService(s *store.Store, logger *slog.Logger) *WebhookService {
+func NewWebhookService(s *store.Store, log *slog.Logger) *WebhookService {
 	return &WebhookService{
 		store:  s,
-		logger: logger,
+		logger: log,
 	}
 }
 
@@ -36,20 +37,22 @@ func (s *WebhookService) Process(ctx context.Context, eventID string, rawBody []
 		return fmt.Errorf("failed to parse event envelope: %w", err)
 	}
 
+	logger.Add(ctx, "webhook_type", event.Type)
+
 	// Try to insert the event
 	alreadyProcessed, err := s.store.InsertWebhookEvent(ctx, eventID, "clerk", event.Type, rawBody)
 	if err != nil {
 		return fmt.Errorf("failed to insert webhook event: %w", err)
 	}
 	if alreadyProcessed {
-		s.logger.Info("webhook event already processed, skipping", "id", eventID)
+		logger.Add(ctx, "webhook_status", "already_processed")
 		return nil
 	}
 
 	handler, exists := GetClerkHandler(event.Type)
 	if !exists {
 		// Mark as processed if unsupported
-		s.logger.Info("unsupported webhook type, marking as processed", "type", event.Type)
+		logger.Add(ctx, "webhook_status", "unsupported_type")
 		if err := s.store.MarkWebhookEventProcessed(ctx, eventID); err != nil {
 			return fmt.Errorf("failed to update unsupported event: %w", err)
 		}
@@ -62,11 +65,12 @@ func (s *WebhookService) Process(ctx context.Context, eventID string, rawBody []
 	})
 
 	if err != nil {
-		// Log the error and update the record's failure state
-		s.logger.Error("webhook handler failed", "id", eventID, "type", event.Type, "error", err)
+		logger.Add(ctx, "webhook_status", "handler_failed")
+		logger.Add(ctx, "error", err.Error())
 
 		// Create a separate connection/transaction to record the error
 		if updateErr := s.store.UpdateWebhookEventError(context.Background(), eventID, err.Error()); updateErr != nil {
+			// This is background context, so we still log it using the injected logger to be safe
 			s.logger.Error("failed to update webhook event error state", "id", eventID, "err", updateErr)
 		}
 
@@ -79,6 +83,6 @@ func (s *WebhookService) Process(ctx context.Context, eventID string, rawBody []
 		return fmt.Errorf("failed to mark webhook event as processed: %w", err)
 	}
 
-	s.logger.Info("successfully processed webhook", "id", eventID, "type", event.Type)
+	logger.Add(ctx, "webhook_status", "processed")
 	return nil
 }
