@@ -66,6 +66,7 @@ func RegisterInventoryRoutes(h *handlers.InventoryHandler) http.Handler {
 	r.Get("/variants/{variantID}/stock", h.GetVariantStock)
 
 	r.Post("/reservations/{reservationID}/release", h.ReleaseReservation)
+	r.Post("/reservations/{reservationID}/fulfill", h.FulfillReservation)
 
 	return r
 }

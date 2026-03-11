@@ -48,7 +48,7 @@ func (s *InventoryService) CreateInventoryReceipt(ctx context.Context, orgID str
 		return nil, fmt.Errorf("product not found")
 	}
 
-	var baseQty int64 = req.Quantity
+	totalBaseQty := req.Quantity
 	if req.Unit != product.BaseUnit {
 		conv, err := s.store.GetConversion(ctx, orgID, product.ID, req.Unit, product.BaseUnit)
 		if err != nil {
@@ -58,14 +58,14 @@ func (s *InventoryService) CreateInventoryReceipt(ctx context.Context, orgID str
 			return nil, fmt.Errorf("conversion from %s to %s not found for product %s", req.Unit, product.BaseUnit, product.Name)
 		}
 
-		calculated := float64(req.Quantity) * conv.Factor
-		// Apply precision rounding
+		calculated := req.Quantity * conv.Factor
+		// Apply precision rounding if conversion specifies it
 		roundingFactor := math.Pow(10, float64(conv.Precision))
-		baseQty = int64(math.Round(calculated*roundingFactor) / roundingFactor)
+		totalBaseQty = math.Round(calculated*roundingFactor) / roundingFactor
 	}
 
 	sourceType := models.InventorySourceTypeReceipt
-	return s.store.CreateInventoryEvent(ctx, orgID, variantID, models.InventoryEventTypeReceipt, baseQty, &sourceType, req.SourceID, req.Note)
+	return s.store.CreateInventoryEvent(ctx, orgID, variantID, models.InventoryEventTypeReceipt, totalBaseQty, &sourceType, req.SourceID, req.Note)
 }
 
 func (s *InventoryService) CreateInventoryAdjustment(ctx context.Context, orgID string, variantID uuid.UUID, req *models.AdjustmentRequest) (*models.InventoryEvent, error) {
@@ -92,7 +92,7 @@ func (s *InventoryService) ReserveInventory(ctx context.Context, orgID string, v
 		}
 
 		if stock.AvailableStock < req.Quantity {
-			return &ierrors.InsufficientStockError{Message: fmt.Sprintf("insufficient stock: available %d, requested %d", stock.AvailableStock, req.Quantity)}
+			return &ierrors.InsufficientStockError{Message: fmt.Sprintf("insufficient stock: available %f, requested %f", stock.AvailableStock, req.Quantity)}
 		}
 
 		// 3. Create reservation
@@ -109,6 +109,37 @@ func (s *InventoryService) ReserveInventory(ctx context.Context, orgID string, v
 
 func (s *InventoryService) ReleaseReservation(ctx context.Context, orgID string, reservationID uuid.UUID) error {
 	return s.store.UpdateReservationStatus(ctx, orgID, reservationID, models.ReservationStatusReleased)
+}
+
+func (s *InventoryService) FulfillReservation(ctx context.Context, orgID string, reservationID uuid.UUID) (*models.InventoryEvent, error) {
+	var event *models.InventoryEvent
+	err := s.store.ExecTx(ctx, func(txStore *store.Store) error {
+		// 1. Get reservation
+		res, err := txStore.GetReservation(ctx, orgID, reservationID)
+		if err != nil {
+			return err
+		}
+		if res == nil {
+			return fmt.Errorf("reservation not found")
+		}
+		if res.Status != models.ReservationStatusActive {
+			return fmt.Errorf("reservation is not active")
+		}
+
+		// 2. Create fulfillment event (negative quantity change)
+		sourceType := models.InventorySourceTypeOrder
+		msg := "Order fulfillment"
+		e, err := txStore.CreateInventoryEvent(ctx, orgID, res.ProductVariantID, models.InventoryEventTypeFulfillment, -res.Quantity, &sourceType, res.OrderID, &msg)
+		if err != nil {
+			return err
+		}
+		event = e
+
+		// 3. Release reservation
+		return txStore.UpdateReservationStatus(ctx, orgID, reservationID, models.ReservationStatusReleased)
+	})
+
+	return event, err
 }
 
 func (s *InventoryService) GetVariantStock(ctx context.Context, orgID string, variantID uuid.UUID) (*models.VariantStock, error) {
