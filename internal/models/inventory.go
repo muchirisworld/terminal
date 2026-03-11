@@ -50,7 +50,7 @@ type InventoryEvent struct {
 	OrganizationID   string                `json:"organization_id"`
 	ProductVariantID uuid.UUID             `json:"product_variant_id"`
 	EventType        InventoryEventType    `json:"event_type"`
-	QuantityChange   int64                 `json:"quantity_change"`
+	QuantityChange   float64               `json:"quantity_change"`
 	SourceType       *InventorySourceType `json:"source_type"`
 	SourceID         *uuid.UUID            `json:"source_id"`
 	Note             *string               `json:"note"`
@@ -62,7 +62,7 @@ type InventoryReservation struct {
 	OrganizationID   string             `json:"organization_id"`
 	ProductVariantID uuid.UUID          `json:"product_variant_id"`
 	OrderID          *uuid.UUID         `json:"order_id"`
-	Quantity         int64              `json:"quantity"`
+	Quantity         float64            `json:"quantity"`
 	Status           ReservationStatus `json:"status"`
 	ExpiresAt        *time.Time         `json:"expires_at"`
 	CreatedAt        time.Time          `json:"created_at"`
@@ -77,25 +77,25 @@ type UpsertConversionRequest struct {
 }
 
 type ReceiptRequest struct {
-	Quantity int64   `json:"quantity"`
+	Quantity float64 `json:"quantity"`
 	Unit     string  `json:"unit"`
 	SourceID *uuid.UUID `json:"source_id"`
 	Note     *string    `json:"note"`
 }
 
 type AdjustmentRequest struct {
-	QuantityChange int64   `json:"quantity_change"`
+	QuantityChange float64 `json:"quantity_change"`
 	Note           *string `json:"note"`
 }
 
 type ReservationRequest struct {
-	Quantity  int64      `json:"quantity"`
+	Quantity  float64    `json:"quantity"`
 	ExpiresAt *time.Time `json:"expires_at"`
 	OrderID   *uuid.UUID `json:"order_id"`
 }
 
 type VariantStock struct {
-	TotalStock     int64 `json:"total_stock"`
-	ReservedStock  int64 `json:"reserved_stock"`
-	AvailableStock int64 `json:"available_stock"`
+	TotalStock     float64 `json:"total_stock"`
+	ReservedStock  float64 `json:"reserved_stock"`
+	AvailableStock float64 `json:"available_stock"`
 }

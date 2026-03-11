@@ -56,8 +56,8 @@ func TestInventoryService_CreateReceiptWithConversion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if event.QuantityChange != 48 {
-		t.Errorf("expected 48 bottles (2 cases * 24), got %d", event.QuantityChange)
+	if event.QuantityChange != 48.0 {
+		t.Errorf("expected 48.0 bottles (2 cases * 24), got %f", event.QuantityChange)
 	}
 
 	// 5. Check stock
@@ -65,8 +65,8 @@ func TestInventoryService_CreateReceiptWithConversion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stock.AvailableStock != 48 {
-		t.Errorf("expected 48 available stock, got %d", stock.AvailableStock)
+	if stock.AvailableStock != 48.0 {
+		t.Errorf("expected 48.0 available stock, got %f", stock.AvailableStock)
 	}
 }
 
@@ -93,14 +93,14 @@ func TestInventoryService_ReserveInventory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Quantity != 4 {
-		t.Errorf("expected reservation of 4, got %d", res.Quantity)
+	if res.Quantity != 4.0 {
+		t.Errorf("expected reservation of 4.0, got %f", res.Quantity)
 	}
 
 	// 2. Check stock (Available should be 6)
 	stock, _ := svc.GetVariantStock(ctx, orgID, v.ID)
-	if stock.AvailableStock != 6 {
-		t.Errorf("expected 6 available, got %d", stock.AvailableStock)
+	if stock.AvailableStock != 6.0 {
+		t.Errorf("expected 6.0 available, got %f", stock.AvailableStock)
 	}
 
 	// 3. Try to reserve 7 (should fail)
@@ -117,7 +117,52 @@ func TestInventoryService_ReserveInventory(t *testing.T) {
 
 	// 5. Check stock (Available should be 10 again)
 	stock, _ = svc.GetVariantStock(ctx, orgID, v.ID)
-	if stock.AvailableStock != 10 {
-		t.Errorf("expected 10 available after release, got %d", stock.AvailableStock)
+	if stock.AvailableStock != 10.0 {
+		t.Errorf("expected 10.0 available after release, got %f", stock.AvailableStock)
+	}
+}
+
+func TestInventoryService_FulfillReservation(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	mainStore := store.New(db)
+	svc := service.NewInventoryService(mainStore)
+	catalogSvc := service.NewCatalogService(mainStore)
+	ctx := context.Background()
+	orgID := "org_test_ful"
+
+	p, _ := catalogSvc.CreateProduct(ctx, orgID, &models.CreateProductRequest{Name: "Juice", BaseUnit: "bottle"})
+	v, _ := catalogSvc.CreateVariant(ctx, orgID, p.ID, &models.CreateVariantRequest{SKU: "JUICE-001", Price: 2.5})
+
+	// 1. Initial stock: 20 bottles
+	svc.CreateInventoryAdjustment(ctx, orgID, v.ID, &models.AdjustmentRequest{QuantityChange: 20})
+
+	// 2. Reserve 5 bottles
+	res, _ := svc.ReserveInventory(ctx, orgID, v.ID, &models.ReservationRequest{Quantity: 5})
+
+	// 3. Fulfill reservation
+	event, err := svc.FulfillReservation(ctx, orgID, res.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.QuantityChange != -5.0 {
+		t.Errorf("expected fulfillment event of -5.0, got %f", event.QuantityChange)
+	}
+
+	// 4. Verify stock (Total should be 15, Available should be 15)
+	stock, _ := svc.GetVariantStock(ctx, orgID, v.ID)
+	if stock.TotalStock != 15.0 {
+		t.Errorf("expected 15.0 total stock, got %f", stock.TotalStock)
+	}
+	if stock.AvailableStock != 15.0 {
+		t.Errorf("expected 15.0 available stock, got %f", stock.AvailableStock)
+	}
+
+	// 5. Verify reservation is no longer active
+	resUpdate, _ := mainStore.GetReservation(ctx, orgID, res.ID)
+	if resUpdate.Status != models.ReservationStatusReleased {
+		t.Errorf("expected reservation status to be released, got %s", resUpdate.Status)
 	}
 }

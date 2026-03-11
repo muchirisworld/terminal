@@ -42,12 +42,14 @@ func RegisterCatalogRoutes(h *handlers.CatalogHandler) http.Handler {
 	r.Get("/products", h.ListProducts)
 	r.Get("/products/{productID}", h.GetProduct)
 	r.Patch("/products/{productID}", h.UpdateProduct)
+	r.Delete("/products/{productID}", h.DeleteProduct)
 	r.Post("/products/{productID}/archive", h.ArchiveProduct)
 
 	r.Post("/products/{productID}/variants", h.CreateVariant)
 	r.Get("/products/{productID}/variants", h.ListVariantsByProduct)
 	r.Get("/variants/{variantID}", h.GetVariant)
 	r.Patch("/variants/{variantID}", h.UpdateVariant)
+	r.Delete("/variants/{variantID}", h.DeleteVariant)
 
 	return r
 }
@@ -56,6 +58,7 @@ func RegisterInventoryRoutes(h *handlers.InventoryHandler) http.Handler {
 	r := chi.NewRouter()
 	r.Post("/products/{productID}/conversions", h.UpsertConversion)
 	r.Get("/products/{productID}/conversions", h.ListConversionsByProduct)
+	r.Delete("/conversions/{conversionID}", h.DeleteConversion)
 
 	r.Post("/variants/{variantID}/receipt", h.CreateReceipt)
 	r.Post("/variants/{variantID}/adjustment", h.CreateAdjustment)
@@ -63,6 +66,7 @@ func RegisterInventoryRoutes(h *handlers.InventoryHandler) http.Handler {
 	r.Get("/variants/{variantID}/stock", h.GetVariantStock)
 
 	r.Post("/reservations/{reservationID}/release", h.ReleaseReservation)
+	r.Post("/reservations/{reservationID}/fulfill", h.FulfillReservation)
 
 	return r
 }

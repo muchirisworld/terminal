@@ -3,12 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"github.com/muchirisworld/terminal/internal/auth"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/muchirisworld/terminal/internal/auth"
 	ierrors "github.com/muchirisworld/terminal/internal/ierrors"
+	"github.com/muchirisworld/terminal/internal/logger"
 	"github.com/muchirisworld/terminal/internal/models"
 	"github.com/muchirisworld/terminal/internal/service"
 )
@@ -42,6 +43,7 @@ func (h *InventoryHandler) UpsertConversion(w http.ResponseWriter, r *http.Reque
 
 	c, err := h.service.UpsertConversion(r.Context(), orgID, productID, &req)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -65,12 +67,36 @@ func (h *InventoryHandler) ListConversionsByProduct(w http.ResponseWriter, r *ht
 
 	conversions, err := h.service.ListConversionsByProduct(r.Context(), orgID, productID)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(conversions)
+}
+
+func (h *InventoryHandler) DeleteConversion(w http.ResponseWriter, r *http.Request) {
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
+	conversionID, err := uuid.Parse(chi.URLParam(r, "conversionID"))
+	if err != nil {
+		http.Error(w, "invalid conversion id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.DeleteConversion(r.Context(), orgID, conversionID)
+	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *InventoryHandler) CreateReceipt(w http.ResponseWriter, r *http.Request) {
@@ -94,6 +120,7 @@ func (h *InventoryHandler) CreateReceipt(w http.ResponseWriter, r *http.Request)
 
 	event, err := h.service.CreateInventoryReceipt(r.Context(), orgID, variantID, &req)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -123,6 +150,7 @@ func (h *InventoryHandler) CreateAdjustment(w http.ResponseWriter, r *http.Reque
 
 	event, err := h.service.CreateInventoryAdjustment(r.Context(), orgID, variantID, &req)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -157,6 +185,7 @@ func (h *InventoryHandler) ReserveInventory(w http.ResponseWriter, r *http.Reque
 			http.Error(w, insErr.Message, http.StatusConflict)
 			return
 		}
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -180,11 +209,34 @@ func (h *InventoryHandler) ReleaseReservation(w http.ResponseWriter, r *http.Req
 
 	err = h.service.ReleaseReservation(r.Context(), orgID, reservationID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "invalid reservation id", http.StatusBadRequest)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *InventoryHandler) FulfillReservation(w http.ResponseWriter, r *http.Request) {
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
+	reservationID, err := uuid.Parse(chi.URLParam(r, "reservationID"))
+	if err != nil {
+		http.Error(w, "invalid reservation id", http.StatusBadRequest)
+		return
+	}
+
+	event, err := h.service.FulfillReservation(r.Context(), orgID, reservationID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(event)
 }
 
 func (h *InventoryHandler) GetVariantStock(w http.ResponseWriter, r *http.Request) {
@@ -202,6 +254,7 @@ func (h *InventoryHandler) GetVariantStock(w http.ResponseWriter, r *http.Reques
 
 	stock, err := h.service.GetVariantStock(r.Context(), orgID, variantID)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

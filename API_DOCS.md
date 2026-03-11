@@ -146,6 +146,14 @@ Routes marked as **Protected: Yes** require authentication. The specific authent
   - `productID` (uuid)
 - **Response (200 OK):** Archived `Product` object.
 
+### Delete Product
+- **Method:** `DELETE`
+- **Path:** `/catalog/products/{productID}`
+- **Protected:** Yes
+- **Path Parameters:**
+  - `productID` (uuid)
+- **Response (204 No Content):** Empty response on success.
+
 ### Create Variant
 - **Method:** `POST`
 - **Path:** `/catalog/products/{productID}/variants`
@@ -212,6 +220,14 @@ Routes marked as **Protected: Yes** require authentication. The specific authent
   ```
 - **Response (200 OK):** Updated `ProductVariant` object.
 
+### Delete Variant
+- **Method:** `DELETE`
+- **Path:** `/catalog/variants/{variantID}`
+- **Protected:** Yes
+- **Path Parameters:**
+  - `variantID` (uuid)
+- **Response (204 No Content):** Empty response on success.
+
 ---
 
 ## Inventory Routes
@@ -255,6 +271,14 @@ Routes marked as **Protected: Yes** require authentication. The specific authent
 - **Path Parameters:**
   - `productID` (uuid)
 - **Response (200 OK):** Array of `UnitConversion` objects.
+
+### Delete Conversion
+- **Method:** `DELETE`
+- **Path:** `/inventory/conversions/{conversionID}`
+- **Protected:** Yes
+- **Path Parameters:**
+  - `conversionID` (uuid)
+- **Response (204 No Content):** Empty response on success.
 
 ### Create Receipt
 - **Method:** `POST`

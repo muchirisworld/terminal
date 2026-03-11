@@ -69,7 +69,7 @@ func (s *Store) DeleteConversion(ctx context.Context, orgID string, conversionID
 	return err
 }
 
-func (s *Store) CreateInventoryEvent(ctx context.Context, orgID string, variantID uuid.UUID, eventType models.InventoryEventType, qty int64, sourceType *models.InventorySourceType, sourceID *uuid.UUID, note *string) (*models.InventoryEvent, error) {
+func (s *Store) CreateInventoryEvent(ctx context.Context, orgID string, variantID uuid.UUID, eventType models.InventoryEventType, qty float64, sourceType *models.InventorySourceType, sourceID *uuid.UUID, note *string) (*models.InventoryEvent, error) {
 	row := s.dbtx.QueryRowContext(ctx,
 		`INSERT INTO inventory_events (organization_id, product_variant_id, event_type, quantity_change, source_type, source_id, note)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -82,7 +82,7 @@ func (s *Store) CreateInventoryEvent(ctx context.Context, orgID string, variantI
 	return &e, err
 }
 
-func (s *Store) CreateInventoryReservation(ctx context.Context, orgID string, variantID uuid.UUID, qty int64, expiresAt *time.Time, orderID *uuid.UUID) (*models.InventoryReservation, error) {
+func (s *Store) CreateInventoryReservation(ctx context.Context, orgID string, variantID uuid.UUID, qty float64, expiresAt *time.Time, orderID *uuid.UUID) (*models.InventoryReservation, error) {
 	row := s.dbtx.QueryRowContext(ctx,
 		`INSERT INTO inventory_reservations (organization_id, product_variant_id, quantity, expires_at, order_id, status)
 		 VALUES ($1, $2, $3, $4, $5, 'active')

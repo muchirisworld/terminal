@@ -91,6 +91,14 @@ func (s *Store) ListProducts(ctx context.Context, orgID string, limit, offset in
 	return products, nil
 }
 
+func (s *Store) DeleteProduct(ctx context.Context, orgID string, productID uuid.UUID) error {
+	_, err := s.dbtx.ExecContext(ctx,
+		`DELETE FROM products WHERE id = $1 AND organization_id = $2`,
+		productID, orgID,
+	)
+	return err
+}
+
 func (s *Store) CreateVariant(ctx context.Context, orgID string, productID uuid.UUID, req *models.CreateVariantRequest) (*models.ProductVariant, error) {
 	row := s.dbtx.QueryRowContext(ctx,
 		`INSERT INTO product_variants (organization_id, product_id, sku, barcode, price, cost, is_active)
@@ -179,4 +187,12 @@ func (s *Store) ListVariantsByProduct(ctx context.Context, orgID string, product
 		variants = append(variants, &v)
 	}
 	return variants, nil
+}
+
+func (s *Store) DeleteVariant(ctx context.Context, orgID string, variantID uuid.UUID) error {
+	_, err := s.dbtx.ExecContext(ctx,
+		`DELETE FROM product_variants WHERE id = $1 AND organization_id = $2`,
+		variantID, orgID,
+	)
+	return err
 }
