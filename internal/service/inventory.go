@@ -20,6 +20,18 @@ func NewInventoryService(s *store.Store) *InventoryService {
 }
 
 func (s *InventoryService) UpsertConversion(ctx context.Context, orgID string, productID uuid.UUID, req *models.UpsertConversionRequest) (*models.UnitConversion, error) {
+	// 1. Fetch product to get its base unit
+	product, err := s.store.GetProduct(ctx, orgID, productID)
+	if err != nil {
+		return nil, err
+	}
+	if product == nil {
+		return nil, fmt.Errorf("product not found")
+	}
+
+	// 2. Enforce UnitTo as the product's base unit
+	req.UnitTo = product.BaseUnit
+
 	return s.store.UpsertConversion(ctx, orgID, productID, req)
 }
 

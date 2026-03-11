@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/muchirisworld/terminal/internal/auth"
 	ierrors "github.com/muchirisworld/terminal/internal/ierrors"
+	"github.com/muchirisworld/terminal/internal/logger"
 	"github.com/muchirisworld/terminal/internal/models"
 	"github.com/muchirisworld/terminal/internal/service"
 )
@@ -42,6 +43,7 @@ func (h *InventoryHandler) UpsertConversion(w http.ResponseWriter, r *http.Reque
 
 	c, err := h.service.UpsertConversion(r.Context(), orgID, productID, &req)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -65,6 +67,7 @@ func (h *InventoryHandler) ListConversionsByProduct(w http.ResponseWriter, r *ht
 
 	conversions, err := h.service.ListConversionsByProduct(r.Context(), orgID, productID)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -88,6 +91,7 @@ func (h *InventoryHandler) DeleteConversion(w http.ResponseWriter, r *http.Reque
 
 	err = h.service.DeleteConversion(r.Context(), orgID, conversionID)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -116,6 +120,7 @@ func (h *InventoryHandler) CreateReceipt(w http.ResponseWriter, r *http.Request)
 
 	event, err := h.service.CreateInventoryReceipt(r.Context(), orgID, variantID, &req)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -145,6 +150,7 @@ func (h *InventoryHandler) CreateAdjustment(w http.ResponseWriter, r *http.Reque
 
 	event, err := h.service.CreateInventoryAdjustment(r.Context(), orgID, variantID, &req)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -179,6 +185,7 @@ func (h *InventoryHandler) ReserveInventory(w http.ResponseWriter, r *http.Reque
 			http.Error(w, insErr.Message, http.StatusConflict)
 			return
 		}
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -247,6 +254,7 @@ func (h *InventoryHandler) GetVariantStock(w http.ResponseWriter, r *http.Reques
 
 	stock, err := h.service.GetVariantStock(r.Context(), orgID, variantID)
 	if err != nil {
+		logger.Add(r.Context(), "error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
