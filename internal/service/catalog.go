@@ -35,6 +35,10 @@ func (s *CatalogService) ListProducts(ctx context.Context, orgID string, limit, 
 	return s.store.ListProducts(ctx, orgID, limit, offset)
 }
 
+func (s *CatalogService) DeleteProduct(ctx context.Context, orgID string, productID uuid.UUID) error {
+	return s.store.DeleteProduct(ctx, orgID, productID)
+}
+
 func (s *CatalogService) CreateVariant(ctx context.Context, orgID string, productID uuid.UUID, req *models.CreateVariantRequest) (*models.ProductVariant, error) {
 	return s.store.CreateVariant(ctx, orgID, productID, req)
 }
@@ -54,4 +58,8 @@ func (s *CatalogService) ListVariantsByProduct(ctx context.Context, orgID string
 func (s *CatalogService) ArchiveProduct(ctx context.Context, orgID string, productID uuid.UUID) (*models.Product, error) {
 	status := models.ProductStatusArchived
 	return s.store.UpdateProduct(ctx, orgID, productID, &models.UpdateProductRequest{Status: &status})
+}
+
+func (s *CatalogService) DeleteVariant(ctx context.Context, orgID string, variantID uuid.UUID) error {
+	return s.store.DeleteVariant(ctx, orgID, variantID)
 }

@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/muchirisworld/terminal/internal/auth"
 	"net/http"
 	"strconv"
+
+	"github.com/muchirisworld/terminal/internal/auth"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -143,6 +144,28 @@ func (h *CatalogHandler) ArchiveProduct(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(p)
 }
 
+func (h *CatalogHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
+	id, err := uuid.Parse(chi.URLParam(r, "productID"))
+	if err != nil {
+		http.Error(w, "invalid product id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.DeleteProduct(r.Context(), orgID, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *CatalogHandler) CreateVariant(w http.ResponseWriter, r *http.Request) {
 	authCtx, ok := auth.FromContext(r.Context())
 	if !ok {
@@ -249,4 +272,26 @@ func (h *CatalogHandler) UpdateVariant(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
+}
+
+func (h *CatalogHandler) DeleteVariant(w http.ResponseWriter, r *http.Request) {
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
+	id, err := uuid.Parse(chi.URLParam(r, "variantID"))
+	if err != nil {
+		http.Error(w, "invalid variant id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.DeleteVariant(r.Context(), orgID, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -3,12 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"github.com/muchirisworld/terminal/internal/auth"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	ierrors "github.com/muchirisworld/terminal/internal/ierrors"
+	"github.com/muchirisworld/terminal/internal/auth"
 	"github.com/muchirisworld/terminal/internal/models"
 	"github.com/muchirisworld/terminal/internal/service"
 )
@@ -71,6 +71,28 @@ func (h *InventoryHandler) ListConversionsByProduct(w http.ResponseWriter, r *ht
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(conversions)
+}
+
+func (h *InventoryHandler) DeleteConversion(w http.ResponseWriter, r *http.Request) {
+	authCtx, ok := auth.FromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	orgID := authCtx.OrgID
+	conversionID, err := uuid.Parse(chi.URLParam(r, "conversionID"))
+	if err != nil {
+		http.Error(w, "invalid conversion id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.DeleteConversion(r.Context(), orgID, conversionID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *InventoryHandler) CreateReceipt(w http.ResponseWriter, r *http.Request) {
